@@ -37,3 +37,4 @@ class SimpleTransformerDecoderBlock(nn.Module):
         tgt = tgt + self.dropout3(tgt2)
         tgt = self.norm3(tgt)
         return tgt
+
