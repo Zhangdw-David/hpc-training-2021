@@ -88,15 +88,30 @@ def build_dataloader(
     )
 
 
-if __name__ == "__main__":
-    from transformers import AutoTokenizer
-
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+def _example_batches(tokenizer):
     examples = [
         {"text": "Hello world", "label": 0},
         {"text": "Transformers are great", "label": 1},
     ]
-    dataloader = build_dataloader(examples, tokenizer, batch_size=2)
+    return build_dataloader(examples, tokenizer, batch_size=2)
 
-    for batch in dataloader:
-        print(batch)
+
+def main():
+    """Run a small demo that prints batches in a readable style."""
+    try:
+        from transformers import AutoTokenizer
+    except Exception as e:
+        raise RuntimeError("transformers is required to run the demo") from e
+
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    dataloader = _example_batches(tokenizer)
+
+    for i, batch in enumerate(dataloader):
+        # convert tensors to python lists for readable printing
+        printable = {k: (v.tolist() if hasattr(v, "tolist") else v) for k, v in batch.items()}
+        print(f"Batch {i}:")
+        print(printable)
+
+
+if __name__ == "__main__":
+    main()
