@@ -108,7 +108,26 @@ def main():
 
     for i, batch in enumerate(dataloader):
         # convert tensors to python lists for readable printing
-        printable = {k: (v.tolist() if hasattr(v, "tolist") else v) for k, v in batch.items()}
+        def _to_list(v):
+            try:
+                import torch
+
+                if isinstance(v, torch.Tensor):
+                    return v.detach().cpu().tolist()
+            except Exception:
+                pass
+            return v
+
+        printable = {k: _to_list(v) for k, v in batch.items()}
+
+        # if tokenizer is available, also print decoded texts from input_ids
+        if "input_ids" in batch and "token_type_ids" in batch:
+            try:
+                decoded = [tokenizer.decode(ids, skip_special_tokens=True) for ids in batch["input_ids"]]
+                printable["decoded_texts"] = decoded
+            except Exception:
+                pass
+
         print(f"Batch {i}:")
         print(printable)
 
