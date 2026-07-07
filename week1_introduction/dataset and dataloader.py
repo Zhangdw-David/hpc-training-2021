@@ -88,12 +88,25 @@ def build_dataloader(
     )
 
 
-def _example_batches(tokenizer):
-    examples = [
-        {"text": "Hello world", "label": 0},
-        {"text": "Transformers are great", "label": 1},
+def create_toy_dataset():
+    return [
+        {"text": "I love machine learning", "label": 1},
+        {"text": "The weather is nice today", "label": 0},
+        {"text": "PyTorch makes training simple", "label": 1},
+        {"text": "An apple a day keeps the doctor away", "label": 0},
     ]
-    return build_dataloader(examples, tokenizer, batch_size=2)
+
+
+def _example_batches(tokenizer):
+    examples = create_toy_dataset()
+    labels = [example["label"] for example in examples]
+    return build_dataloader(
+        examples,
+        tokenizer,
+        batch_size=2,
+        max_length=32,
+        labels=labels,
+    )
 
 
 def main():
@@ -104,7 +117,19 @@ def main():
         raise RuntimeError("transformers is required to run the demo") from e
 
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    examples = create_toy_dataset()
+    labels = [example["label"] for example in examples]
+
+    dataset = TransformerFineTuneDataset(
+        examples=examples,
+        tokenizer=tokenizer,
+        max_length=32,
+        labels=labels,
+    )
     dataloader = _example_batches(tokenizer)
+
+    print(f"Toy dataset size: {len(dataset)}")
+    print("First sample:", dataset[0])
 
     for i, batch in enumerate(dataloader):
         # convert tensors to python lists for readable printing
@@ -134,3 +159,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
