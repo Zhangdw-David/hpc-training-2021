@@ -88,15 +88,76 @@ def build_dataloader(
     )
 
 
-if __name__ == "__main__":
-    from transformers import AutoTokenizer
+def create_toy_dataset():
+    return [
+        {"text": "I love machine learning", "label": 1},
+        {"text": "The weather is nice today", "label": 0},
+        {"text": "PyTorch makes training simple", "label": 1},
+        {"text": "An apple a day keeps the doctor away", "label": 0},
+    ]
+
+
+def _example_batches(tokenizer):
+    examples = create_toy_dataset()
+    labels = [example["label"] for example in examples]
+    return build_dataloader(
+        examples,
+        tokenizer,
+        batch_size=2,
+        max_length=32,
+        labels=labels,
+    )
+
+
+def main():
+    """Run a small demo that prints batches in a readable style."""
+    try:
+        from transformers import AutoTokenizer
+    except Exception as e:
+        raise RuntimeError("transformers is required to run the demo") from e
 
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-    examples = [
-        {"text": "Hello world", "label": 0},
-        {"text": "Transformers are great", "label": 1},
-    ]
-    dataloader = build_dataloader(examples, tokenizer, batch_size=2)
+    examples = create_toy_dataset()
+    labels = [example["label"] for example in examples]
 
-    for batch in dataloader:
-        print(batch)
+    dataset = TransformerFineTuneDataset(
+        examples=examples,
+        tokenizer=tokenizer,
+        max_length=32,
+        labels=labels,
+    )
+    dataloader = _example_batches(tokenizer)
+
+    print(f"Toy dataset size: {len(dataset)}")
+    print("First sample:", dataset[0])
+
+    for i, batch in enumerate(dataloader):
+        # convert tensors to python lists for readable printing
+        def _to_list(v):
+            try:
+                import torch
+
+                if isinstance(v, torch.Tensor):
+                    return v.detach().cpu().tolist()
+            except Exception:
+                pass
+            return v
+
+        printable = {k: _to_list(v) for k, v in batch.items()}
+
+        # if tokenizer is available, also print decoded texts from input_ids
+        if "input_ids" in batch and "token_type_ids" in batch:
+            try:
+                decoded = [tokenizer.decode(ids, skip_special_tokens=True) for ids in batch["input_ids"]]
+                printable["decoded_texts"] = decoded
+            except Exception:
+                pass
+
+        print(f"Batch {i}:")
+        print(printable)
+
+
+if __name__ == "__main__":
+    main()
+
+
